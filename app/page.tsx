@@ -34,7 +34,7 @@ export default function HomePage() {
         <div>
           <div className="inline-flex items-center gap-2 rounded-md border border-tiktok-cyan/30 bg-tiktok-cyan/10 px-3 py-2 text-xs font-black uppercase text-tiktok-cyan">
             <Sparkles className="h-4 w-4" aria-hidden="true" />
-            MVP без AI-чата
+            MVP с локальным AI-чатом
           </div>
           <h1 className="mt-5 max-w-3xl text-4xl font-black leading-none text-white sm:text-5xl lg:text-6xl">
             TikTok Media Buying Trainer

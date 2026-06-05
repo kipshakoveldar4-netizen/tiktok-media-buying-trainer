@@ -1,9 +1,17 @@
 import Link from "next/link";
-import { BarChart3, BookOpen, BookOpenCheck, GraduationCap, Home } from "lucide-react";
+import {
+  BarChart3,
+  BookOpen,
+  BookOpenCheck,
+  GraduationCap,
+  Home,
+  MessageCircle,
+} from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Главная", icon: Home },
   { href: "/learning", label: "Обучение", icon: BookOpen },
+  { href: "/chat", label: "AI-чат", icon: MessageCircle },
   { href: "/topics", label: "Темы", icon: BookOpenCheck },
   { href: "/exam", label: "Экзамен", icon: GraduationCap },
   { href: "/result", label: "Результат", icon: BarChart3 },
@@ -27,7 +35,7 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="grid grid-cols-5 gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-1">
+        <nav className="grid grid-cols-6 gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-1">
           {navItems.map((item) => {
             const Icon = item.icon;
 
@@ -38,7 +46,7 @@ export function Header() {
                 className="flex min-h-10 items-center justify-center gap-2 rounded-md px-2 text-xs font-bold text-white/78 transition hover:bg-white/10 hover:text-white sm:px-3 sm:text-sm"
               >
                 <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="hidden sm:inline">{item.label}</span>
+                <span className="hidden lg:inline">{item.label}</span>
               </Link>
             );
           })}
