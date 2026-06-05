@@ -15,9 +15,11 @@ import {
 import { questions, topics } from "@/data/questions";
 import { AccessRestrictionCard } from "@/components/AccessRestrictionCard";
 import {
+  calculateScore,
   RESULT_STORAGE_KEY,
 } from "@/lib/results";
 import type { QuizMode, StoredQuizResult } from "@/lib/results";
+import { saveQuizResultToProgress } from "@/lib/progress";
 import {
   ACCESS_EVENT,
   filterQuestionsByAccess,
@@ -130,6 +132,7 @@ export function QuizRunner({ mode, topic }: QuizRunnerProps) {
     };
 
     window.localStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(result));
+    saveQuizResultToProgress(result, calculateScore(result, questions));
     router.push("/result");
   }
 

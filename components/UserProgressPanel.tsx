@@ -7,6 +7,8 @@ import {
   ArrowRight,
   BarChart3,
   BookOpenCheck,
+  CalendarClock,
+  ClipboardCheck,
   RotateCcw,
   Target,
   Trophy,
@@ -23,6 +25,26 @@ import {
 } from "@/lib/progress";
 import type { UserProgress } from "@/lib/progress";
 import { RESULT_STORAGE_KEY } from "@/lib/results";
+
+function formatAttemptDate(value?: string) {
+  if (!value) {
+    return "";
+  }
+
+  try {
+    return new Intl.DateTimeFormat("ru-RU", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(new Date(value));
+  } catch {
+    return "";
+  }
+}
+
+function formatExamValue(attempt: UserProgress["bestExam"]) {
+  return attempt ? `${attempt.percent}%` : "Нет";
+}
 
 export function UserProgressPanel() {
   const [progress, setProgress] = useState<UserProgress>(() =>
@@ -49,11 +71,14 @@ export function UserProgressPanel() {
 
   const weakTopics = useMemo(() => getWeakTopics(progress, 4), [progress]);
   const studiedCount = progress.studiedTopics.length;
-  const bestExam = progress.bestExam ? `${progress.bestExam.percent}%` : "Нет";
+  const bestExam = formatExamValue(progress.bestExam);
+  const lastExam = formatExamValue(progress.lastExam);
+  const totalExams = isLoaded ? progress.totalExamsCompleted : 0;
+  const totalTopicTests = isLoaded ? progress.totalTopicTestsCompleted : 0;
   const hasAnyProgress =
     studiedCount > 0 ||
-    progress.totalTestsCompleted > 0 ||
-    Boolean(progress.bestExam) ||
+    totalTopicTests > 0 ||
+    totalExams > 0 ||
     weakTopics.length > 0;
 
   function confirmResetProgress() {
@@ -67,11 +92,15 @@ export function UserProgressPanel() {
     <section className="rounded-lg border border-white/10 bg-tiktok-panel p-5 shadow-neon sm:p-7">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-black uppercase text-tiktok-cyan">Мой прогресс</p>
-          <h2 className="mt-2 text-3xl font-black text-white">Личная статистика</h2>
+          <p className="text-xs font-black uppercase text-tiktok-cyan">
+            Мой прогресс
+          </p>
+          <h2 className="mt-2 text-3xl font-black text-white">
+            Личная статистика
+          </h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-tiktok-muted">
-            Прогресс сохраняется локально в браузере: изученные темы, попытки,
-            лучший экзамен и слабые темы по ошибкам.
+            Прогресс сохраняется локально в браузере: изученные темы,
+            тематические тесты, экзамены и слабые темы по ошибкам.
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -94,7 +123,7 @@ export function UserProgressPanel() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <ProgressStatCard
           title="Изучено тем"
           value={isLoaded ? `${studiedCount}/${knowledgeBase.length}` : "0"}
@@ -102,14 +131,26 @@ export function UserProgressPanel() {
           accent="cyan"
         />
         <ProgressStatCard
-          title="Лучший экзамен"
+          title="Лучший результат экзамена"
           value={bestExam}
           icon={Trophy}
           accent="red"
         />
         <ProgressStatCard
-          title="Пройдено тестов"
-          value={String(progress.totalTestsCompleted)}
+          title="Последний результат экзамена"
+          value={lastExam}
+          icon={CalendarClock}
+          accent="cyan"
+        />
+        <ProgressStatCard
+          title="Всего экзаменов пройдено"
+          value={String(totalExams)}
+          icon={ClipboardCheck}
+          accent="red"
+        />
+        <ProgressStatCard
+          title="Тематических тестов"
+          value={String(totalTopicTests)}
           icon={BarChart3}
           accent="cyan"
         />
@@ -124,9 +165,35 @@ export function UserProgressPanel() {
       <div className="mt-5 rounded-lg border border-white/10 bg-tiktok-black p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
+            <p className="text-sm font-black text-white">Экзамены</p>
+            {totalExams > 0 && progress.lastExam ? (
+              <p className="mt-1 text-xs leading-5 text-tiktok-muted">
+                Последний экзамен: {progress.lastExam.percent}% ·{" "}
+                {progress.lastExam.correct} из {progress.lastExam.total} ·{" "}
+                {formatAttemptDate(progress.lastExam.submittedAt)}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs leading-5 text-tiktok-muted">
+                Экзаменов пока нет.
+              </p>
+            )}
+          </div>
+          <Link
+            href="/exam"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-tiktok-red bg-tiktok-red/10 px-4 text-xs font-black text-white transition hover:bg-tiktok-red"
+          >
+            Пройти экзамен
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-lg border border-white/10 bg-tiktok-black p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
             <p className="text-sm font-black text-white">Слабые темы</p>
             <p className="mt-1 text-xs leading-5 text-tiktok-muted">
-              Список строится по накопленным ошибкам в тестах и экзаменах.
+              Список строится по накопленным ошибкам в тематических тестах и экзаменах.
             </p>
           </div>
           <Link
@@ -160,12 +227,12 @@ export function UserProgressPanel() {
         )}
       </div>
 
-      {progress.totalTestsCompleted === 0 && studiedCount === 0 ? (
+      {totalExams === 0 && totalTopicTests === 0 && studiedCount === 0 ? (
         <div className="mt-5 rounded-lg border border-tiktok-cyan/30 bg-tiktok-cyan/10 p-4">
           <p className="text-sm font-black text-white">Пока нет результатов</p>
           <p className="mt-2 text-sm leading-6 text-tiktok-muted">
-            Начните с конспекта или тематического теста. После первой попытки здесь
-            появятся личные метрики и рекомендации.
+            Начните с конспекта, тематического теста или экзамена. После первой
+            попытки здесь появятся личные метрики и рекомендации.
           </p>
         </div>
       ) : null}
@@ -191,8 +258,8 @@ export function UserProgressPanel() {
               Сбросить прогресс?
             </h3>
             <p className="mt-3 text-sm leading-6 text-tiktok-muted">
-              Будут очищены изученные темы, история тестов, лучший экзамен,
-              слабые темы и последний результат. Это действие нельзя отменить.
+              Будут очищены изученные темы, история тестов, экзамены, слабые темы
+              и последний результат. Это действие нельзя отменить.
             </p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">

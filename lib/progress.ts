@@ -1,9 +1,24 @@
 import type { Question } from "@/data/questions";
-import type { StoredQuizResult } from "@/lib/results";
+import type { QuizMode, StoredQuizResult } from "@/lib/results";
 
 export const USER_PROGRESS_STORAGE_KEY =
   "tiktok-media-buying-trainer:user-progress";
 export const USER_PROGRESS_EVENT = "tiktok-media-buying-trainer:progress-updated";
+
+export type WeakTopicProgress = {
+  topic: string;
+  mistakes: number;
+};
+
+export type TopicAttemptProgress = {
+  type: "topic";
+  topic: string;
+  percent: number;
+  correct: number;
+  total: number;
+  submittedAt: string;
+  weakTopics: WeakTopicProgress[];
+};
 
 export type TopicResultProgress = {
   attempts: number;
@@ -14,26 +29,26 @@ export type TopicResultProgress = {
   history: TopicAttemptProgress[];
 };
 
-export type TopicAttemptProgress = {
+export type ExamAttemptProgress = {
+  type: "exam";
   percent: number;
   correct: number;
   total: number;
   submittedAt: string;
-};
-
-export type ExamBestProgress = {
-  percent: number;
-  correct: number;
-  total: number;
-  submittedAt: string;
+  weakTopics: WeakTopicProgress[];
 };
 
 export type UserProgress = {
-  version: 1;
+  version: 2;
   studiedTopics: string[];
   topicResults: Record<string, TopicResultProgress>;
-  bestExam?: ExamBestProgress;
+  topicAttempts: TopicAttemptProgress[];
+  examAttempts: ExamAttemptProgress[];
+  bestExam?: ExamAttemptProgress;
+  lastExam?: ExamAttemptProgress;
   totalTestsCompleted: number;
+  totalTopicTestsCompleted: number;
+  totalExamsCompleted: number;
   savedAttemptIds: string[];
   mistakeCountsByTopic: Record<string, number>;
   lastUpdatedAt?: string;
@@ -51,15 +66,79 @@ export type ScoreForProgress = {
   rows: ResultRowForProgress[];
 };
 
+type LegacyExamProgress = {
+  percent?: number;
+  correct?: number;
+  total?: number;
+  submittedAt?: string;
+  weakTopics?: WeakTopicProgress[];
+  type?: QuizMode;
+};
+
 export function createEmptyProgress(): UserProgress {
   return {
-    version: 1,
+    version: 2,
     studiedTopics: [],
     topicResults: {},
+    topicAttempts: [],
+    examAttempts: [],
     totalTestsCompleted: 0,
+    totalTopicTestsCompleted: 0,
+    totalExamsCompleted: 0,
     savedAttemptIds: [],
     mistakeCountsByTopic: {},
   };
+}
+
+function normalizeWeakTopics(value: unknown): WeakTopicProgress[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (
+      item &&
+      typeof item === "object" &&
+      "topic" in item &&
+      "mistakes" in item &&
+      typeof item.topic === "string" &&
+      typeof item.mistakes === "number"
+    ) {
+      return [
+        {
+          topic: item.topic,
+          mistakes: item.mistakes,
+        },
+      ];
+    }
+
+    return [];
+  });
+}
+
+function normalizeExamAttempt(value: LegacyExamProgress | undefined) {
+  if (
+    !value ||
+    typeof value.percent !== "number" ||
+    typeof value.correct !== "number" ||
+    typeof value.total !== "number" ||
+    typeof value.submittedAt !== "string"
+  ) {
+    return undefined;
+  }
+
+  return {
+    type: "exam" as const,
+    percent: value.percent,
+    correct: value.correct,
+    total: value.total,
+    submittedAt: value.submittedAt,
+    weakTopics: normalizeWeakTopics(value.weakTopics),
+  };
+}
+
+function isExamAttempt(value: ExamAttemptProgress | undefined): value is ExamAttemptProgress {
+  return Boolean(value);
 }
 
 export function readUserProgress(): UserProgress {
@@ -75,14 +154,63 @@ export function readUserProgress(): UserProgress {
 
   try {
     const parsedProgress = JSON.parse(rawProgress) as Partial<UserProgress>;
+    const emptyProgress = createEmptyProgress();
+    const migratedBestExam = normalizeExamAttempt(
+      parsedProgress.bestExam as LegacyExamProgress | undefined,
+    );
+    const migratedLastExam = normalizeExamAttempt(
+      parsedProgress.lastExam as LegacyExamProgress | undefined,
+    );
+    const examAttempts =
+      parsedProgress.examAttempts
+        ?.map((item) => normalizeExamAttempt(item))
+        .filter(isExamAttempt) ??
+      [];
+    const normalizedExamAttempts =
+      examAttempts.length > 0
+        ? examAttempts
+        : migratedBestExam
+          ? [migratedBestExam]
+          : [];
+    const lastExam =
+      migratedLastExam ??
+      normalizedExamAttempts[normalizedExamAttempts.length - 1] ??
+      undefined;
+    const bestExam =
+      migratedBestExam ??
+      normalizedExamAttempts.reduce<ExamAttemptProgress | undefined>(
+        (best, attempt) =>
+          !best || attempt.percent > best.percent ? attempt : best,
+        undefined,
+      );
+    const topicAttempts = parsedProgress.topicAttempts ?? [];
+    const topicResults = parsedProgress.topicResults ?? {};
+    const totalExamsCompleted =
+      parsedProgress.totalExamsCompleted ?? normalizedExamAttempts.length;
+    const totalTopicTestsCompleted =
+      parsedProgress.totalTopicTestsCompleted ??
+      (topicAttempts.length > 0
+        ? topicAttempts.length
+        : Object.values(topicResults).reduce(
+            (sum, topicResult) => sum + (topicResult?.attempts ?? 0),
+            0,
+          ));
 
     return {
-      ...createEmptyProgress(),
+      ...emptyProgress,
       ...parsedProgress,
-      version: 1,
+      version: 2,
       studiedTopics: parsedProgress.studiedTopics ?? [],
-      topicResults: parsedProgress.topicResults ?? {},
-      totalTestsCompleted: parsedProgress.totalTestsCompleted ?? 0,
+      topicResults,
+      topicAttempts,
+      examAttempts: normalizedExamAttempts,
+      bestExam,
+      lastExam,
+      totalTestsCompleted:
+        parsedProgress.totalTestsCompleted ??
+        totalExamsCompleted + totalTopicTestsCompleted,
+      totalTopicTestsCompleted,
+      totalExamsCompleted,
       savedAttemptIds: parsedProgress.savedAttemptIds ?? [],
       mistakeCountsByTopic: parsedProgress.mistakeCountsByTopic ?? {},
     };
@@ -132,25 +260,45 @@ export function unmarkTopicAsStudied(topic: string) {
   });
 }
 
+export function getWeakTopicsFromRows(rows: ResultRowForProgress[]) {
+  const mistakesByTopic: Record<string, number> = {};
+
+  rows.forEach((row) => {
+    if (!row.isCorrect) {
+      const topic = row.question.topic;
+      mistakesByTopic[topic] = (mistakesByTopic[topic] ?? 0) + 1;
+    }
+  });
+
+  return Object.entries(mistakesByTopic)
+    .sort((left, right) => right[1] - left[1])
+    .map(([topic, mistakes]) => ({
+      topic,
+      mistakes,
+    }));
+}
+
 export function saveQuizResultToProgress(
   result: StoredQuizResult,
   score: ScoreForProgress,
 ) {
   const progress = readUserProgress();
-  const attemptId = result.submittedAt;
+  const attemptId = `${result.mode}:${result.submittedAt}`;
 
-  if (progress.savedAttemptIds.includes(attemptId)) {
+  if (
+    progress.savedAttemptIds.includes(attemptId) ||
+    progress.savedAttemptIds.includes(result.submittedAt)
+  ) {
     return progress;
   }
 
+  const attemptWeakTopics = getWeakTopicsFromRows(score.rows);
   const mistakeCountsByTopic = { ...progress.mistakeCountsByTopic };
 
-  for (const row of score.rows) {
-    if (!row.isCorrect) {
-      const topic = row.question.topic;
-      mistakeCountsByTopic[topic] = (mistakeCountsByTopic[topic] ?? 0) + 1;
-    }
-  }
+  attemptWeakTopics.forEach((item) => {
+    mistakeCountsByTopic[item.topic] =
+      (mistakeCountsByTopic[item.topic] ?? 0) + item.mistakes;
+  });
 
   const nextProgress: UserProgress = {
     ...progress,
@@ -160,10 +308,22 @@ export function saveQuizResultToProgress(
   };
 
   if (result.mode === "topic" && result.topic) {
+    const topicAttempt: TopicAttemptProgress = {
+      type: "topic",
+      topic: result.topic,
+      percent: score.percent,
+      correct: score.correct,
+      total: score.total,
+      submittedAt: result.submittedAt,
+      weakTopics: attemptWeakTopics,
+    };
     const previousTopicResult = progress.topicResults[result.topic];
     const isBest =
       !previousTopicResult || score.percent > previousTopicResult.bestPercent;
 
+    nextProgress.totalTopicTestsCompleted =
+      progress.totalTopicTestsCompleted + 1;
+    nextProgress.topicAttempts = [...progress.topicAttempts, topicAttempt];
     nextProgress.topicResults = {
       ...progress.topicResults,
       [result.topic]: {
@@ -176,29 +336,28 @@ export function saveQuizResultToProgress(
         bestAttemptAt: isBest
           ? result.submittedAt
           : (previousTopicResult?.bestAttemptAt ?? result.submittedAt),
-        history: [
-          ...(previousTopicResult?.history ?? []),
-          {
-            percent: score.percent,
-            correct: score.correct,
-            total: score.total,
-            submittedAt: result.submittedAt,
-          },
-        ],
+        history: [...(previousTopicResult?.history ?? []), topicAttempt],
       },
     };
   }
 
-  if (
-    result.mode === "exam" &&
-    (!progress.bestExam || score.percent > progress.bestExam.percent)
-  ) {
-    nextProgress.bestExam = {
+  if (result.mode === "exam") {
+    const examAttempt: ExamAttemptProgress = {
+      type: "exam",
       percent: score.percent,
       correct: score.correct,
       total: score.total,
       submittedAt: result.submittedAt,
+      weakTopics: attemptWeakTopics,
     };
+
+    nextProgress.totalExamsCompleted = progress.totalExamsCompleted + 1;
+    nextProgress.examAttempts = [...progress.examAttempts, examAttempt];
+    nextProgress.lastExam = examAttempt;
+
+    if (!progress.bestExam || score.percent > progress.bestExam.percent) {
+      nextProgress.bestExam = examAttempt;
+    }
   }
 
   writeUserProgress(nextProgress);

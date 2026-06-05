@@ -29,6 +29,7 @@ export default function ResultPage() {
   const [progress, setProgress] = useState<UserProgress>(() =>
     createEmptyProgress(),
   );
+  const [isProgressSaved, setIsProgressSaved] = useState(false);
 
   useEffect(() => {
     const rawResult = window.localStorage.getItem(RESULT_STORAGE_KEY);
@@ -57,6 +58,7 @@ export default function ResultPage() {
     }
 
     setProgress(saveQuizResultToProgress(result, score));
+    setIsProgressSaved(true);
   }, [result, score]);
 
   if (!result || !score) {
@@ -140,6 +142,14 @@ export default function ResultPage() {
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
+
+          {isProgressSaved ? (
+            <p className="mt-5 rounded-md border border-tiktok-cyan/30 bg-tiktok-cyan/10 p-3 text-sm font-bold leading-6 text-white">
+              {result.mode === "exam"
+                ? "Экзамен сохранён в разделе «Мой прогресс»."
+                : "Тематический тест сохранён отдельно как результат по теме."}
+            </p>
+          ) : null}
         </div>
       </section>
 
