@@ -7,6 +7,7 @@ import {
   Home,
   KeyRound,
   MessageCircle,
+  ShoppingCart,
 } from "lucide-react";
 
 const navItems = [
@@ -16,6 +17,7 @@ const navItems = [
   { href: "/topics", label: "Темы", icon: BookOpenCheck },
   { href: "/exam", label: "Экзамен", icon: GraduationCap },
   { href: "/result", label: "Результат", icon: BarChart3 },
+  { href: "/pricing", label: "Купить доступ", icon: ShoppingCart },
   { href: "/access", label: "Доступ", icon: KeyRound },
 ];
 
@@ -37,7 +39,7 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="grid grid-cols-7 gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-1">
+        <nav className="grid grid-cols-8 gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-1">
           {navItems.map((item) => {
             const Icon = item.icon;
 
