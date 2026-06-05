@@ -7,7 +7,7 @@ import {
   GraduationCap,
   Sparkles,
 } from "lucide-react";
-import { topics } from "@/data/questions";
+import { questions, topics } from "@/data/questions";
 
 const features = [
   {
@@ -68,7 +68,9 @@ export default function HomePage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-black uppercase text-tiktok-cyan">Training snapshot</p>
-                <h2 className="mt-2 text-2xl font-black text-white">30 демо-вопросов</h2>
+                <h2 className="mt-2 text-2xl font-black text-white">
+                  {questions.length} демо-вопросов
+                </h2>
               </div>
               <span className="grid h-12 w-12 place-items-center rounded-lg bg-white text-lg font-black text-tiktok-black">
                 TT
