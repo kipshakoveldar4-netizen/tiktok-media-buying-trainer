@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpenCheck, Layers3 } from "lucide-react";
+import { ArrowRight, BookOpen, BookOpenCheck, Layers3 } from "lucide-react";
 import { questions, topics } from "@/data/questions";
 
 export default function TopicsPage() {
@@ -52,13 +52,22 @@ export default function TopicsPage() {
               Проверьте базовые понятия, сценарии запуска и типовые решения для этого раздела.
             </p>
 
-            <Link
-              href={`/test?topic=${encodeURIComponent(topic)}`}
-              className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-tiktok-cyan bg-tiktok-cyan/10 px-4 text-sm font-black text-white transition hover:bg-tiktok-cyan hover:text-tiktok-black"
-            >
-              Начать тест
-              <BookOpenCheck className="h-4 w-4" aria-hidden="true" />
-            </Link>
+            <div className="mt-5 grid gap-3">
+              <Link
+                href={`/learning/${encodeURIComponent(topic)}`}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-tiktok-cyan px-4 text-sm font-black text-tiktok-black transition hover:bg-white"
+              >
+                Изучить тему
+                <BookOpen className="h-4 w-4" aria-hidden="true" />
+              </Link>
+              <Link
+                href={`/test?topic=${encodeURIComponent(topic)}`}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-tiktok-cyan bg-tiktok-cyan/10 px-4 text-sm font-black text-white transition hover:bg-tiktok-cyan hover:text-tiktok-black"
+              >
+                Начать тест
+                <BookOpenCheck className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </div>
           </article>
         ))}
       </section>

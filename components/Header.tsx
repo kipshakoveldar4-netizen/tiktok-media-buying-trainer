@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { BarChart3, BookOpenCheck, GraduationCap, Home } from "lucide-react";
+import { BarChart3, BookOpen, BookOpenCheck, GraduationCap, Home } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Главная", icon: Home },
+  { href: "/learning", label: "Обучение", icon: BookOpen },
   { href: "/topics", label: "Темы", icon: BookOpenCheck },
   { href: "/exam", label: "Экзамен", icon: GraduationCap },
   { href: "/result", label: "Результат", icon: BarChart3 },
@@ -26,7 +27,7 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="grid grid-cols-4 gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-1">
+        <nav className="grid grid-cols-5 gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-1">
           {navItems.map((item) => {
             const Icon = item.icon;
 
