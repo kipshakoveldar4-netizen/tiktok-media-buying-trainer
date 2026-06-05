@@ -8,7 +8,9 @@ import {
   ArrowRight,
   Check,
   ClipboardCheck,
+  GraduationCap,
   RotateCcw,
+  Trophy,
 } from "lucide-react";
 import { questions, topics } from "@/data/questions";
 import {
@@ -34,6 +36,7 @@ export function QuizRunner({ mode, topic }: QuizRunnerProps) {
   const [examQuestionIds, setExamQuestionIds] = useState<number[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [isCompletionVisible, setIsCompletionVisible] = useState(false);
 
   useEffect(() => {
     if (mode === "exam") {
@@ -69,6 +72,7 @@ export function QuizRunner({ mode, topic }: QuizRunnerProps) {
   function resetQuiz() {
     setActiveIndex(0);
     setAnswers({});
+    setIsCompletionVisible(false);
 
     if (mode === "exam") {
       setExamQuestionIds(shuffle(questions).slice(0, 20).map((question) => question.id));
@@ -90,6 +94,15 @@ export function QuizRunner({ mode, topic }: QuizRunnerProps) {
 
     window.localStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(result));
     router.push("/result");
+  }
+
+  function finishQuiz() {
+    if (mode === "exam") {
+      setIsCompletionVisible(true);
+      return;
+    }
+
+    submitQuiz();
   }
 
   if (mode === "topic" && (!topic || !selectedTopicExists)) {
@@ -139,6 +152,90 @@ export function QuizRunner({ mode, topic }: QuizRunnerProps) {
     );
   }
 
+  if (mode === "exam" && isCompletionVisible) {
+    return (
+      <section className="rounded-lg border border-white/10 bg-tiktok-panel p-5 shadow-neon sm:p-7">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-center">
+          <div>
+            <span className="grid h-14 w-14 place-items-center rounded-lg bg-tiktok-cyan text-tiktok-black shadow-neon">
+              <Trophy className="h-7 w-7" aria-hidden="true" />
+            </span>
+            <p className="mt-6 text-xs font-black uppercase text-tiktok-cyan">
+              Экзамен завершен
+            </p>
+            <h1 className="mt-3 text-3xl font-black text-white sm:text-4xl">
+              20 вопросов пройдены
+            </h1>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-tiktok-muted">
+              Ответы сохранены для расчета результата. На следующем экране вы
+              увидите процент, правильные ответы, слабые темы и рекомендации для
+              повторения.
+            </p>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border border-white/10 bg-tiktok-black p-4">
+                <p className="text-3xl font-black text-tiktok-cyan">
+                  {answeredCount}
+                </p>
+                <p className="mt-1 text-xs font-black uppercase text-tiktok-muted">
+                  Отвечено
+                </p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-tiktok-black p-4">
+                <p className="text-3xl font-black text-tiktok-red">
+                  {quizQuestions.length}
+                </p>
+                <p className="mt-1 text-xs font-black uppercase text-tiktok-muted">
+                  Вопросов
+                </p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-tiktok-black p-4">
+                <p className="text-3xl font-black text-white">100%</p>
+                <p className="mt-1 text-xs font-black uppercase text-tiktok-muted">
+                  Готово
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={submitQuiz}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-tiktok-cyan px-5 text-sm font-black text-tiktok-black transition hover:bg-white"
+              >
+                Показать результат
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCompletionVisible(false)}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/10 px-5 text-sm font-black text-white transition hover:bg-white/10"
+              >
+                Вернуться к вопросам
+              </button>
+              <button
+                type="button"
+                onClick={resetQuiz}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-tiktok-red bg-tiktok-red/10 px-5 text-sm font-black text-white transition hover:bg-tiktok-red"
+              >
+                Новый экзамен
+                <GraduationCap className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-white/10 bg-tiktok-black p-5">
+            <ProgressBar value={100} label="Прогресс экзамена" />
+            <p className="mt-5 text-sm leading-6 text-tiktok-muted">
+              Совет: после результата откройте разбор ошибок и повторите темы,
+              где накопилось больше всего промахов.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <div className="rounded-lg border border-white/10 bg-tiktok-panel p-4 shadow-neon sm:p-6">
@@ -164,6 +261,10 @@ export function QuizRunner({ mode, topic }: QuizRunnerProps) {
         <div className="mt-6">
           <ProgressBar value={progress} label={`Вопрос ${activeIndex + 1} из ${quizQuestions.length}`} />
         </div>
+        <p className="mt-3 text-xs leading-5 text-tiktok-muted">
+          Выберите один вариант ответа. Номера справа помогают быстро вернуться к
+          любому вопросу перед завершением.
+        </p>
 
         <div className="mt-7 rounded-lg border border-white/10 bg-tiktok-black p-4 sm:p-5">
           <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase text-tiktok-muted">
@@ -231,12 +332,12 @@ export function QuizRunner({ mode, topic }: QuizRunnerProps) {
           {isLastQuestion ? (
             <button
               type="button"
-              onClick={submitQuiz}
+              onClick={finishQuiz}
               disabled={answeredCount !== quizQuestions.length}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-tiktok-red px-5 text-sm font-black text-white transition hover:bg-white hover:text-tiktok-black disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Check className="h-4 w-4" aria-hidden="true" />
-              Завершить
+              {mode === "exam" ? "Завершить экзамен" : "Завершить"}
             </button>
           ) : (
             <button
@@ -252,6 +353,11 @@ export function QuizRunner({ mode, topic }: QuizRunnerProps) {
             </button>
           )}
         </div>
+        {!hasCurrentAnswer ? (
+          <p className="mt-3 text-xs leading-5 text-tiktok-muted">
+            Ответьте на текущий вопрос, чтобы перейти дальше.
+          </p>
+        ) : null}
       </div>
 
       <aside className="rounded-lg border border-white/10 bg-tiktok-panel p-4 shadow-red lg:sticky lg:top-24 lg:h-fit">
@@ -296,6 +402,15 @@ export function QuizRunner({ mode, topic }: QuizRunnerProps) {
         <p className="mt-5 text-xs leading-5 text-tiktok-muted">
           В конце тренажер покажет процент, все ответы и отдельный разбор ошибок.
         </p>
+        {answeredCount !== quizQuestions.length ? (
+          <p className="mt-3 rounded-md border border-white/10 bg-white/[0.03] p-3 text-xs leading-5 text-tiktok-muted">
+            Осталось ответить: {quizQuestions.length - answeredCount}
+          </p>
+        ) : (
+          <p className="mt-3 rounded-md border border-tiktok-cyan/30 bg-tiktok-cyan/10 p-3 text-xs font-bold leading-5 text-white">
+            Все вопросы отвечены. Можно завершать попытку.
+          </p>
+        )}
       </aside>
     </section>
   );

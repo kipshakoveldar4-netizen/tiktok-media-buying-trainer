@@ -108,6 +108,10 @@ export function writeUserProgress(progress: UserProgress) {
   window.dispatchEvent(new Event(USER_PROGRESS_EVENT));
 }
 
+export function resetUserProgress() {
+  writeUserProgress(createEmptyProgress());
+}
+
 export function markTopicAsStudied(topic: string) {
   const progress = readUserProgress();
 

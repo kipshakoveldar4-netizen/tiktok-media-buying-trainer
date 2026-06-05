@@ -17,7 +17,12 @@ export default function ReviewPage() {
     const rawResult = window.localStorage.getItem(RESULT_STORAGE_KEY);
 
     if (rawResult) {
-      setResult(JSON.parse(rawResult) as StoredQuizResult);
+      try {
+        setResult(JSON.parse(rawResult) as StoredQuizResult);
+      } catch {
+        window.localStorage.removeItem(RESULT_STORAGE_KEY);
+        setResult(null);
+      }
     }
   }, []);
 

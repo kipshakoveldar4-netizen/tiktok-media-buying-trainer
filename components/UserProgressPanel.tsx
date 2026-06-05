@@ -2,22 +2,34 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BarChart3, BookOpenCheck, Target, Trophy } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  BarChart3,
+  BookOpenCheck,
+  RotateCcw,
+  Target,
+  Trophy,
+  X,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { knowledgeBase } from "@/data/knowledgeBase";
 import {
   createEmptyProgress,
   getWeakTopics,
   readUserProgress,
+  resetUserProgress,
   USER_PROGRESS_EVENT,
 } from "@/lib/progress";
 import type { UserProgress } from "@/lib/progress";
+import { RESULT_STORAGE_KEY } from "@/lib/results";
 
 export function UserProgressPanel() {
   const [progress, setProgress] = useState<UserProgress>(() =>
     createEmptyProgress(),
   );
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
   useEffect(() => {
     function syncProgress() {
@@ -38,6 +50,18 @@ export function UserProgressPanel() {
   const weakTopics = useMemo(() => getWeakTopics(progress, 4), [progress]);
   const studiedCount = progress.studiedTopics.length;
   const bestExam = progress.bestExam ? `${progress.bestExam.percent}%` : "Нет";
+  const hasAnyProgress =
+    studiedCount > 0 ||
+    progress.totalTestsCompleted > 0 ||
+    Boolean(progress.bestExam) ||
+    weakTopics.length > 0;
+
+  function confirmResetProgress() {
+    window.localStorage.removeItem(RESULT_STORAGE_KEY);
+    resetUserProgress();
+    setProgress(createEmptyProgress());
+    setIsResetConfirmOpen(false);
+  }
 
   return (
     <section className="rounded-lg border border-white/10 bg-tiktok-panel p-5 shadow-neon sm:p-7">
@@ -50,13 +74,24 @@ export function UserProgressPanel() {
             лучший экзамен и слабые темы по ошибкам.
           </p>
         </div>
-        <Link
-          href="/learning"
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-tiktok-cyan px-5 text-sm font-black text-tiktok-black transition hover:bg-white"
-        >
-          Продолжить обучение
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </Link>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => setIsResetConfirmOpen(true)}
+            disabled={!hasAnyProgress}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-tiktok-red bg-tiktok-red/10 px-5 text-sm font-black text-white transition hover:bg-tiktok-red disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <RotateCcw className="h-4 w-4" aria-hidden="true" />
+            Сбросить прогресс
+          </button>
+          <Link
+            href="/learning"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-tiktok-cyan px-5 text-sm font-black text-tiktok-black transition hover:bg-white"
+          >
+            Продолжить обучение
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
       </div>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -124,6 +159,61 @@ export function UserProgressPanel() {
           </p>
         )}
       </div>
+
+      {progress.totalTestsCompleted === 0 && studiedCount === 0 ? (
+        <div className="mt-5 rounded-lg border border-tiktok-cyan/30 bg-tiktok-cyan/10 p-4">
+          <p className="text-sm font-black text-white">Пока нет результатов</p>
+          <p className="mt-2 text-sm leading-6 text-tiktok-muted">
+            Начните с конспекта или тематического теста. После первой попытки здесь
+            появятся личные метрики и рекомендации.
+          </p>
+        </div>
+      ) : null}
+
+      {isResetConfirmOpen ? (
+        <div className="fixed inset-0 z-40 grid place-items-center bg-tiktok-black/80 px-4 backdrop-blur">
+          <div className="w-full max-w-md rounded-lg border border-white/10 bg-tiktok-panel p-5 shadow-neon">
+            <div className="flex items-start justify-between gap-4">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-tiktok-red text-white">
+                <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsResetConfirmOpen(false)}
+                className="grid h-10 w-10 place-items-center rounded-md border border-white/10 text-white transition hover:bg-white/10"
+                aria-label="Закрыть подтверждение"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+
+            <h3 className="mt-5 text-2xl font-black text-white">
+              Сбросить прогресс?
+            </h3>
+            <p className="mt-3 text-sm leading-6 text-tiktok-muted">
+              Будут очищены изученные темы, история тестов, лучший экзамен,
+              слабые темы и последний результат. Это действие нельзя отменить.
+            </p>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setIsResetConfirmOpen(false)}
+                className="inline-flex min-h-11 items-center justify-center rounded-md border border-white/10 px-5 text-sm font-black text-white transition hover:bg-white/10"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={confirmResetProgress}
+                className="inline-flex min-h-11 items-center justify-center rounded-md bg-tiktok-red px-5 text-sm font-black text-white transition hover:bg-white hover:text-tiktok-black"
+              >
+                Да, сбросить
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
