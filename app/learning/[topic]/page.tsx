@@ -11,6 +11,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { getKnowledgeTopic, knowledgeBase } from "@/data/knowledgeBase";
 import { MarkStudiedButton } from "@/components/MarkStudiedButton";
+import { LearningTopicAccessGate } from "@/components/LearningTopicAccessGate";
 
 type LearningTopicPageProps = {
   params: Promise<{
@@ -24,7 +25,9 @@ export function generateStaticParams() {
   }));
 }
 
-export default async function LearningTopicPage({ params }: LearningTopicPageProps) {
+export default async function LearningTopicPage({
+  params,
+}: LearningTopicPageProps) {
   const { topic: rawTopic } = await params;
   const topicTitle = decodeURIComponent(rawTopic);
   const topic = getKnowledgeTopic(topicTitle);
@@ -53,49 +56,53 @@ export default async function LearningTopicPage({ params }: LearningTopicPagePro
         <p className="mt-4 max-w-3xl text-base leading-7 text-tiktok-muted">
           {topic.shortSummary}
         </p>
-
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <Link
-            href={`/test?topic=${encodeURIComponent(topic.title)}`}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-tiktok-cyan px-5 text-sm font-black text-tiktok-black transition hover:bg-white"
-          >
-            Пройти тест по этой теме
-            <BookOpenCheck className="h-4 w-4" aria-hidden="true" />
-          </Link>
-          <MarkStudiedButton topic={topic.title} />
-        </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-2">
-        <StudyCard
-          title="Ключевые идеи"
-          icon={CheckCircle2}
-          accent="cyan"
-          items={topic.keyPoints}
-        />
-        <StudyCard
-          title="Подсказки для экзамена"
-          icon={Lightbulb}
-          accent="red"
-          items={topic.examTips}
-        />
-        <StudyCard
-          title="Типичные ошибки"
-          icon={TriangleAlert}
-          accent="red"
-          items={topic.commonMistakes}
-        />
-        <StudyCard
-          title="Фокус перед тестом"
-          icon={Target}
-          accent="cyan"
-          items={[
-            "Сравните ключевые идеи с вопросами по теме.",
-            "Проверьте, понимаете ли вы назначение инструментов, а не только их названия.",
-            "После конспекта сразу пройдите тематический тест и разберите ошибки.",
-          ]}
-        />
-      </section>
+      <LearningTopicAccessGate topic={topic.title}>
+        <section className="rounded-lg border border-white/10 bg-tiktok-panel p-5 shadow-red sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link
+              href={`/test?topic=${encodeURIComponent(topic.title)}`}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-tiktok-cyan px-5 text-sm font-black text-tiktok-black transition hover:bg-white"
+            >
+              Пройти тест по этой теме
+              <BookOpenCheck className="h-4 w-4" aria-hidden="true" />
+            </Link>
+            <MarkStudiedButton topic={topic.title} />
+          </div>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-2">
+          <StudyCard
+            title="Ключевые идеи"
+            icon={CheckCircle2}
+            accent="cyan"
+            items={topic.keyPoints}
+          />
+          <StudyCard
+            title="Подсказки для экзамена"
+            icon={Lightbulb}
+            accent="red"
+            items={topic.examTips}
+          />
+          <StudyCard
+            title="Типичные ошибки"
+            icon={TriangleAlert}
+            accent="red"
+            items={topic.commonMistakes}
+          />
+          <StudyCard
+            title="Фокус перед тестом"
+            icon={Target}
+            accent="cyan"
+            items={[
+              "Сравните ключевые идеи с вопросами по теме.",
+              "Проверьте, понимаете ли вы назначение инструментов, а не только их названия.",
+              "После конспекта сразу пройдите тематический тест и разберите ошибки.",
+            ]}
+          />
+        </section>
+      </LearningTopicAccessGate>
     </div>
   );
 }

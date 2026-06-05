@@ -8,6 +8,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { questions, topics } from "@/data/questions";
+import { AccessStatusCard } from "@/components/AccessStatusCard";
 import { UserProgressPanel } from "@/components/UserProgressPanel";
 
 const features = [
@@ -103,6 +104,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <AccessStatusCard />
 
       <UserProgressPanel />
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -13,6 +13,12 @@ import {
 } from "lucide-react";
 import { knowledgeBase } from "@/data/knowledgeBase";
 import type { KnowledgeTopic } from "@/data/knowledgeBase";
+import { AccessRestrictionCard } from "@/components/AccessRestrictionCard";
+import {
+  ACCESS_EVENT,
+  isDemoChatTopic,
+  readAccessState,
+} from "@/lib/access";
 
 type ChatMessage =
   | {
@@ -35,6 +41,8 @@ type ChatAnswer = {
 };
 
 const fallbackText = "Эта тема пока не добавлена в базу знаний.";
+const demoChatRestrictionText =
+  "В демо-режиме AI-чат отвечает только по нескольким темам. Откройте полный доступ, чтобы задавать вопросы по всей базе знаний.";
 
 const topicExplanations: Record<string, string> = {
   "TikTok Business Center":
@@ -301,6 +309,8 @@ function buildAnswer(question: string): ChatAnswer | undefined {
 }
 
 export default function ChatPage() {
+  const [isFullAccess, setIsFullAccess] = useState(false);
+  const [isAccessLoaded, setIsAccessLoaded] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 1,
@@ -310,6 +320,22 @@ export default function ChatPage() {
   ]);
   const [input, setInput] = useState("");
 
+  useEffect(() => {
+    function syncAccessState() {
+      setIsFullAccess(readAccessState().isFullAccess);
+      setIsAccessLoaded(true);
+    }
+
+    syncAccessState();
+    window.addEventListener(ACCESS_EVENT, syncAccessState);
+    window.addEventListener("storage", syncAccessState);
+
+    return () => {
+      window.removeEventListener(ACCESS_EVENT, syncAccessState);
+      window.removeEventListener("storage", syncAccessState);
+    };
+  }, []);
+
   function sendQuestion(questionText: string) {
     const trimmedQuestion = questionText.trim();
 
@@ -318,6 +344,10 @@ export default function ChatPage() {
     }
 
     const answer = buildAnswer(trimmedQuestion);
+    const isRestrictedDemoAnswer =
+      Boolean(answer) &&
+      !isFullAccess &&
+      !isDemoChatTopic(answer?.topic.title ?? "");
 
     setMessages((currentMessages) => {
       const nextMessageId = currentMessages.length + 1;
@@ -333,7 +363,9 @@ export default function ChatPage() {
           ? {
               id: nextMessageId + 1,
               role: "assistant",
-              answer,
+              ...(isRestrictedDemoAnswer
+                ? { text: demoChatRestrictionText }
+                : { answer }),
             }
           : {
               id: nextMessageId + 1,
@@ -373,6 +405,14 @@ export default function ChatPage() {
           </Link>
         </div>
       </section>
+
+      {isAccessLoaded && !isFullAccess ? (
+        <AccessRestrictionCard
+          title="AI-чат ограничен"
+          description="В демо-режиме чат отвечает только по темам TikTok Business Center, Spark Ads и Advertising Policy."
+          note="Введите код доступа, чтобы спрашивать по всем темам базы знаний."
+        />
+      ) : null}
 
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="rounded-lg border border-white/10 bg-tiktok-panel p-4 shadow-neon sm:p-5">

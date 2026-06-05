@@ -5,6 +5,7 @@ import {
   BookOpenCheck,
   GraduationCap,
   Home,
+  KeyRound,
   MessageCircle,
 } from "lucide-react";
 
@@ -15,6 +16,7 @@ const navItems = [
   { href: "/topics", label: "Темы", icon: BookOpenCheck },
   { href: "/exam", label: "Экзамен", icon: GraduationCap },
   { href: "/result", label: "Результат", icon: BarChart3 },
+  { href: "/access", label: "Доступ", icon: KeyRound },
 ];
 
 export function Header() {
@@ -35,7 +37,7 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="grid grid-cols-6 gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-1">
+        <nav className="grid grid-cols-7 gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-1">
           {navItems.map((item) => {
             const Icon = item.icon;
 

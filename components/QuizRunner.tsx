@@ -13,10 +13,16 @@ import {
   Trophy,
 } from "lucide-react";
 import { questions, topics } from "@/data/questions";
+import { AccessRestrictionCard } from "@/components/AccessRestrictionCard";
 import {
   RESULT_STORAGE_KEY,
 } from "@/lib/results";
 import type { QuizMode, StoredQuizResult } from "@/lib/results";
+import {
+  ACCESS_EVENT,
+  filterQuestionsByAccess,
+  readAccessState,
+} from "@/lib/access";
 import { ProgressBar } from "@/components/ProgressBar";
 
 type QuizRunnerProps = {
@@ -33,28 +39,55 @@ function shuffle<T>(items: T[]) {
 
 export function QuizRunner({ mode, topic }: QuizRunnerProps) {
   const router = useRouter();
+  const [isFullAccess, setIsFullAccess] = useState(false);
+  const [isAccessLoaded, setIsAccessLoaded] = useState(false);
   const [examQuestionIds, setExamQuestionIds] = useState<number[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [isCompletionVisible, setIsCompletionVisible] = useState(false);
 
   useEffect(() => {
-    if (mode === "exam") {
-      setExamQuestionIds(shuffle(questions).slice(0, 20).map((question) => question.id));
+    function syncAccessState() {
+      setIsFullAccess(readAccessState().isFullAccess);
+      setIsAccessLoaded(true);
     }
-  }, [mode]);
+
+    syncAccessState();
+    window.addEventListener(ACCESS_EVENT, syncAccessState);
+    window.addEventListener("storage", syncAccessState);
+
+    return () => {
+      window.removeEventListener(ACCESS_EVENT, syncAccessState);
+      window.removeEventListener("storage", syncAccessState);
+    };
+  }, []);
+
+  const availableQuestions = useMemo(
+    () => filterQuestionsByAccess(questions, isFullAccess),
+    [isFullAccess],
+  );
+
+  useEffect(() => {
+    if (mode === "exam") {
+      setExamQuestionIds(
+        shuffle(availableQuestions)
+          .slice(0, 20)
+          .map((question) => question.id),
+      );
+    }
+  }, [availableQuestions, mode]);
 
   const quizQuestions = useMemo(() => {
     if (mode === "exam") {
-      const byId = new Map(questions.map((question) => [question.id, question]));
+      const byId = new Map(availableQuestions.map((question) => [question.id, question]));
       return examQuestionIds.flatMap((id) => {
         const question = byId.get(id);
         return question ? [question] : [];
       });
     }
 
-    return questions.filter((question) => question.topic === topic);
-  }, [examQuestionIds, mode, topic]);
+    return availableQuestions.filter((question) => question.topic === topic);
+  }, [availableQuestions, examQuestionIds, mode, topic]);
 
   const selectedTopicExists = !topic || topics.includes(topic as (typeof topics)[number]);
   const currentQuestion = quizQuestions[activeIndex];
@@ -75,7 +108,11 @@ export function QuizRunner({ mode, topic }: QuizRunnerProps) {
     setIsCompletionVisible(false);
 
     if (mode === "exam") {
-      setExamQuestionIds(shuffle(questions).slice(0, 20).map((question) => question.id));
+      setExamQuestionIds(
+        shuffle(availableQuestions)
+          .slice(0, 20)
+          .map((question) => question.id),
+      );
     }
   }
 
@@ -137,6 +174,15 @@ export function QuizRunner({ mode, topic }: QuizRunnerProps) {
   }
 
   if (!currentQuestion) {
+    if (isAccessLoaded && !isFullAccess) {
+      return (
+        <AccessRestrictionCard
+          title="В демо нет вопросов для этого набора"
+          description="Демо-режим использует ограниченную выборку из 20 вопросов. Откройте полный доступ, чтобы тренироваться по всей базе."
+        />
+      );
+    }
+
     return (
       <section className="rounded-lg border border-white/10 bg-tiktok-panel p-6 shadow-neon">
         <p className="text-sm font-bold uppercase text-tiktok-red">Пока пусто</p>
@@ -265,6 +311,20 @@ export function QuizRunner({ mode, topic }: QuizRunnerProps) {
           Выберите один вариант ответа. Номера справа помогают быстро вернуться к
           любому вопросу перед завершением.
         </p>
+        {isAccessLoaded && !isFullAccess ? (
+          <div className="mt-3 flex flex-col gap-3 rounded-md border border-tiktok-red/30 bg-tiktok-red/10 p-3 text-xs font-bold leading-5 text-white sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              Демо-режим: тесты используют ограниченную выборку из 20 вопросов.
+              Полный доступ открывает все 120 вопросов.
+            </p>
+            <Link
+              href="/access"
+              className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-md bg-tiktok-cyan px-3 text-xs font-black text-tiktok-black transition hover:bg-white"
+            >
+              Открыть полный доступ
+            </Link>
+          </div>
+        ) : null}
 
         <div className="mt-7 rounded-lg border border-white/10 bg-tiktok-black p-4 sm:p-5">
           <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase text-tiktok-muted">
