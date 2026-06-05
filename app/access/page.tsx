@@ -5,12 +5,13 @@ import Link from "next/link";
 import {
   ArrowRight,
   CheckCircle2,
+  Eye,
+  EyeOff,
   KeyRound,
   LockKeyhole,
   ShieldCheck,
 } from "lucide-react";
 import {
-  ACCESS_CODE,
   DEMO_QUESTION_LIMIT,
   readAccessState,
   unlockFullAccess,
@@ -20,6 +21,7 @@ export default function AccessPage() {
   const [code, setCode] = useState("");
   const [isFullAccess, setIsFullAccess] = useState(false);
   const [error, setError] = useState("");
+  const [isCodeVisible, setIsCodeVisible] = useState(false);
 
   useEffect(() => {
     setIsFullAccess(readAccessState().isFullAccess);
@@ -31,7 +33,7 @@ export default function AccessPage() {
     const isUnlocked = unlockFullAccess(code);
 
     if (!isUnlocked) {
-      setError("Код не подошел. Проверьте написание и попробуйте еще раз.");
+      setError("Неверный код доступа");
       return;
     }
 
@@ -120,15 +122,31 @@ export default function AccessPage() {
                 <span className="text-xs font-black uppercase text-tiktok-muted">
                   Код доступа
                 </span>
-                <input
-                  value={code}
-                  onChange={(event) => {
-                    setCode(event.target.value);
-                    setError("");
-                  }}
-                  placeholder={ACCESS_CODE}
-                  className="mt-2 min-h-12 w-full rounded-md border border-white/10 bg-tiktok-black px-4 text-sm font-black uppercase tracking-[0.08em] text-white outline-none transition placeholder:text-tiktok-muted focus:border-tiktok-cyan"
-                />
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                  <input
+                    type={isCodeVisible ? "text" : "password"}
+                    value={code}
+                    onChange={(event) => {
+                      setCode(event.target.value);
+                      setError("");
+                    }}
+                    placeholder="Введите код доступа"
+                    className="min-h-12 flex-1 rounded-md border border-white/10 bg-tiktok-black px-4 text-sm font-black tracking-[0.08em] text-white outline-none transition placeholder:normal-case placeholder:tracking-normal placeholder:text-tiktok-muted focus:border-tiktok-cyan"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsCodeVisible((current) => !current)}
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/10 px-4 text-sm font-black text-white transition hover:border-tiktok-cyan hover:bg-white/10"
+                    aria-label={isCodeVisible ? "Скрыть код" : "Показать код"}
+                  >
+                    {isCodeVisible ? (
+                      <EyeOff className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    {isCodeVisible ? "Скрыть код" : "Показать код"}
+                  </button>
+                </div>
               </label>
 
               {error ? (
