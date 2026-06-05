@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { getKnowledgeTopic, knowledgeBase } from "@/data/knowledgeBase";
+import { MarkStudiedButton } from "@/components/MarkStudiedButton";
 
 type LearningTopicPageProps = {
   params: Promise<{
@@ -53,13 +54,16 @@ export default async function LearningTopicPage({ params }: LearningTopicPagePro
           {topic.shortSummary}
         </p>
 
-        <Link
-          href={`/test?topic=${encodeURIComponent(topic.title)}`}
-          className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-tiktok-cyan px-5 text-sm font-black text-tiktok-black transition hover:bg-white"
-        >
-          Пройти тест по этой теме
-          <BookOpenCheck className="h-4 w-4" aria-hidden="true" />
-        </Link>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <Link
+            href={`/test?topic=${encodeURIComponent(topic.title)}`}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-tiktok-cyan px-5 text-sm font-black text-tiktok-black transition hover:bg-white"
+          >
+            Пройти тест по этой теме
+            <BookOpenCheck className="h-4 w-4" aria-hidden="true" />
+          </Link>
+          <MarkStudiedButton topic={topic.title} />
+        </div>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">

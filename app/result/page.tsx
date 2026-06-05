@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ClipboardList,
   RotateCcw,
+  Target,
   XCircle,
 } from "lucide-react";
 import { questions } from "@/data/questions";
@@ -16,9 +17,18 @@ import {
 } from "@/lib/results";
 import type { StoredQuizResult } from "@/lib/results";
 import { ProgressBar } from "@/components/ProgressBar";
+import {
+  createEmptyProgress,
+  getWeakTopics,
+  saveQuizResultToProgress,
+} from "@/lib/progress";
+import type { UserProgress } from "@/lib/progress";
 
 export default function ResultPage() {
   const [result, setResult] = useState<StoredQuizResult | null>(null);
+  const [progress, setProgress] = useState<UserProgress>(() =>
+    createEmptyProgress(),
+  );
 
   useEffect(() => {
     const rawResult = window.localStorage.getItem(RESULT_STORAGE_KEY);
@@ -35,6 +45,14 @@ export default function ResultPage() {
 
     return calculateScore(result, questions);
   }, [result]);
+
+  useEffect(() => {
+    if (!result || !score) {
+      return;
+    }
+
+    setProgress(saveQuizResultToProgress(result, score));
+  }, [result, score]);
 
   if (!result || !score) {
     return (
@@ -69,6 +87,7 @@ export default function ResultPage() {
     result.mode === "topic" && result.topic
       ? `/test?topic=${encodeURIComponent(result.topic)}`
       : "/exam";
+  const weakTopics = getWeakTopics(progress, 4);
 
   return (
     <div className="space-y-6">
@@ -117,6 +136,55 @@ export default function ResultPage() {
             </Link>
           </div>
         </div>
+      </section>
+
+      <section className="rounded-lg border border-white/10 bg-tiktok-panel p-5 shadow-neon sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase text-tiktok-red">
+              Слабые темы
+            </p>
+            <h2 className="mt-2 text-2xl font-black text-white">
+              Что повторить после этой попытки
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-tiktok-muted">
+              Прогресс сохранен в браузере. Слабые темы считаются по накопленным
+              ошибкам в тестах и экзаменах.
+            </p>
+          </div>
+          <span className="grid h-11 w-11 place-items-center rounded-lg bg-tiktok-red text-white">
+            <Target className="h-5 w-5" aria-hidden="true" />
+          </span>
+        </div>
+
+        {weakTopics.length > 0 ? (
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {weakTopics.map((item) => (
+              <Link
+                key={item.topic}
+                href={`/learning/${encodeURIComponent(item.topic)}`}
+                className="rounded-lg border border-white/10 bg-tiktok-black p-4 transition hover:border-tiktok-cyan hover:bg-white/[0.04]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-black text-white">{item.topic}</h3>
+                    <p className="mt-2 text-sm leading-6 text-tiktok-muted">
+                      Повторите конспект и затем пройдите тематический тест заново.
+                    </p>
+                  </div>
+                  <span className="rounded-md bg-tiktok-red px-2 py-1 text-xs font-black text-white">
+                    {item.mistakes}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-5 rounded-lg border border-white/10 bg-tiktok-black p-4 text-sm leading-6 text-tiktok-muted">
+            Ошибок пока нет. Продолжайте проходить тематические тесты и экзамен,
+            чтобы система подсказала приоритеты для повторения.
+          </p>
+        )}
       </section>
 
       <section className="space-y-3">

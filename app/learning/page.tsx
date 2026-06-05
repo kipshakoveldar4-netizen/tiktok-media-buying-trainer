@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, BookOpen, CheckCircle2, FileText } from "lucide-react";
 import { knowledgeBase } from "@/data/knowledgeBase";
+import { MarkStudiedButton } from "@/components/MarkStudiedButton";
 
 export default function LearningPage() {
   return (
@@ -54,13 +55,16 @@ export default function LearningPage() {
               <span>{topic.keyPoints.length} ключевых пункта</span>
             </div>
 
-            <Link
-              href={`/learning/${encodeURIComponent(topic.title)}`}
-              className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-tiktok-cyan bg-tiktok-cyan/10 px-4 text-sm font-black text-white transition hover:bg-tiktok-cyan hover:text-tiktok-black"
-            >
-              Изучить тему
-              <BookOpen className="h-4 w-4" aria-hidden="true" />
-            </Link>
+            <div className="mt-5 grid gap-3">
+              <Link
+                href={`/learning/${encodeURIComponent(topic.title)}`}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-tiktok-cyan bg-tiktok-cyan/10 px-4 text-sm font-black text-white transition hover:bg-tiktok-cyan hover:text-tiktok-black"
+              >
+                Изучить тему
+                <BookOpen className="h-4 w-4" aria-hidden="true" />
+              </Link>
+              <MarkStudiedButton topic={topic.title} />
+            </div>
           </article>
         ))}
       </section>

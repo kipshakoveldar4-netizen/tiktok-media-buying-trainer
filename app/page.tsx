@@ -8,6 +8,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { questions, topics } from "@/data/questions";
+import { UserProgressPanel } from "@/components/UserProgressPanel";
 
 const features = [
   {
@@ -102,6 +103,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <UserProgressPanel />
 
       <section className="grid gap-4 md:grid-cols-3">
         {features.map((feature) => {
